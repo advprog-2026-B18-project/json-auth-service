@@ -19,6 +19,8 @@ bin/
 
 ### IntelliJ IDEA ###
 .idea
+.agents
+.cursor
 *.iws
 *.iml
 *.ipr
