@@ -19,6 +19,8 @@ bin/
 
 ### IntelliJ IDEA ###
 .idea
+.agents
+.cursor
 *.iws
 *.iml
 *.ipr
@@ -35,3 +37,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment Variables ###
+.env
