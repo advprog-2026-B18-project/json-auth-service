@@ -1,7 +1,9 @@
 plugins {
     java
+    jacoco
     id("org.springframework.boot") version "3.2.2"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.sonarqube") version "7.1.0.6387"
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -24,6 +26,18 @@ repositories {
     mavenCentral()
 }
 
+sonar {
+  properties {
+    property("sonar.projectKey", "advprog-2026-B18-project_json-auth-service")
+    property("sonar.organization", "advprog-2026-b18-project")
+  }
+}
+
+val seleniumJavaVersion = "4.14.1"
+val seleniumJupiterVersion = "5.0.1"
+val webdrivermanagerVersion = "5.6.3"
+val junitJupiterVersion = "5.9.1"
+
 dependencies {
     implementation("io.github.cdimascio:dotenv-java:3.0.0")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -36,8 +50,48 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.seleniumhq.selenium:selenium-java:${seleniumJavaVersion}")
+    testImplementation("io.github.bonigarcia:selenium-jupiter:${seleniumJupiterVersion}")
+    testImplementation("io.github.bonigarcia:webdrivermanager:${webdrivermanagerVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
+
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+tasks.test {
+    filter {
+        excludeTestsMatching("*FunctionalTest")
+    }
+
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    // exclude main function & enums dari jacoco test report
+    classDirectories.setFrom(
+        classDirectories.files.map { fileTree(it).apply {
+            exclude("**/model/enums/**")
+            exclude("**/JsonPaymentServiceApplication.class")
+        }}
+    )
+}
+
+
+
+tasks.withType<Checkstyle>().configureEach {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
