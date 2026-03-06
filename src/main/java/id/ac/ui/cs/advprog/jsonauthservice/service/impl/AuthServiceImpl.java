@@ -57,12 +57,16 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
 
+        if (request.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("Cannot request admin role");
+        }
+
         Account account = new Account();
         account.setEmail(request.getEmail());
         account.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        account.setRole(Role.TITIPERS);
-        account.setStatus(AccountStatus.PENDING_VERIFICATION);
+        account.setRole(request.getRole());
         account.setUsername(null);
+        account.setStatus((request.getRole() == Role.JASTIPER) ? AccountStatus.PENDING_VERIFICATION : AccountStatus.ACTIVE);
 
         Account saved = accountRepository.save(account);
 
@@ -126,7 +130,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(RefreshTokenRequestDTO request) {
         String token = request.getRefreshToken();
-        // Mark the provided refresh token as revoked; access token will expire naturally.
         revokedTokenStore.revoke(token);
     }
 

@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.jsonauthservice.dto.auth;
 
+import id.ac.ui.cs.advprog.jsonauthservice.model.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,4 +22,6 @@ public class RegisterRequestDTO {
     @NotBlank
     @JsonProperty("password_confirmation")
     private String passwordConfirmation;
+
+    private Role role;
 }
