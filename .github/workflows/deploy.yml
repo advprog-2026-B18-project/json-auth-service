@@ -3,6 +3,7 @@ on:
   push:
     branches: 
       - main
+      - deployment
 
 env:
   SERVICE_NAME: auth-service 
