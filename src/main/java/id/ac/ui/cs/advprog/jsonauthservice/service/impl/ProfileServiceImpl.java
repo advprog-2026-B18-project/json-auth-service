@@ -188,5 +188,36 @@ public class ProfileServiceImpl implements ProfileService {
         dto.setRejectionReason(submission.getRejectionReason());
         return dto;
     }
+
+    @Override
+    public PublicProfileResponseDTO getPublicProfileById(UUID id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Profile not found"));
+
+        if (account.getStatus() == AccountStatus.BANNED) {
+            throw new AccessDeniedException("Profile not available");
+        }
+
+        PublicProfileResponseDTO dto = new PublicProfileResponseDTO();
+        dto.setUserId(account.getId());
+        dto.setUsername(account.getUsername());
+        dto.setFullName(account.getFullName());
+        dto.setProfilePictureUrl(account.getProfilePictureUrl());
+        dto.setRole(account.getRole());
+        dto.setMemberSince(account.getCreatedAt());
+        dto.setStatus(account.getStatus());
+
+        if (account.getRole() == Role.JASTIPER) {
+            PublicJastiperStatsDTO stats = new PublicJastiperStatsDTO();
+            stats.setTotalOrders(0);
+            stats.setSuccessRate(0.0);
+            stats.setAvgRating(0.0);
+            dto.setStats(stats);
+            dto.setRating(0.0);
+            dto.setBadges(java.util.List.of());
+        }
+
+        return dto;
+    }
 }
 

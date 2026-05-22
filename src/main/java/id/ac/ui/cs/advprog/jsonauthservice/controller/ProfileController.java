@@ -55,7 +55,7 @@ public class ProfileController {
     }
 
     @GetMapping("/{username}")
-    public ApiResponse<PublicProfileResponseDTO> getPublicProfile(@PathVariable String username) {
+    public ApiResponse<PublicProfileResponseDTO> getPublicProfile(@PathVariable("username") String username) {
         PublicProfileResponseDTO profile = profileService.getPublicProfile(username);
         ApiResponse<PublicProfileResponseDTO> response = new ApiResponse<>();
         response.setSuccess(true);
@@ -92,6 +92,17 @@ public class ProfileController {
         response.setSuccess(true);
         response.setMessage("KYC status fetched");
         response.setData(status);
+        return response;
+    }
+
+    @GetMapping("/id/{id}")
+    public ApiResponse<PublicProfileResponseDTO> getProfileById(@PathVariable("id") UUID id) {
+        PublicProfileResponseDTO profile = profileService.getPublicProfileById(id);
+        
+        ApiResponse<PublicProfileResponseDTO> response = new ApiResponse<>();
+        response.setSuccess(true);
+        response.setMessage("Profile fetched by ID");
+        response.setData(profile);
         return response;
     }
 }

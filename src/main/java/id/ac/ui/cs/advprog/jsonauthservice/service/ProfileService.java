@@ -10,5 +10,6 @@ public interface ProfileService {
     PublicProfileResponseDTO getPublicProfile(String username);
     ProfileResponseDTO submitKyc(UUID accountId, KycSubmissionRequestDTO request);
     KycStatusResponseDTO getMyKycStatus(UUID accountId);
+    PublicProfileResponseDTO getPublicProfileById(UUID id);
 }
 
