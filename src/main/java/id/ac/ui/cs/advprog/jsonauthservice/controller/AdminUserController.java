@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.jsonauthservice.controller;
 
+import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUpdateUserStatusRequestDTO;
+import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUpdateUserStatusResponseDTO;
 import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUserDetailResponseDTO;
 import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUserListResponseDTO;
 import id.ac.ui.cs.advprog.jsonauthservice.dto.common.ApiResponse;
@@ -58,6 +60,21 @@ public class AdminUserController {
         ApiResponse<AdminUserDetailResponseDTO> response = new ApiResponse<>();
         response.setSuccess(true);
         response.setMessage("User detail fetched");
+        response.setData(result);
+        return response;
+    }
+
+    @PatchMapping("/{userId}/status")
+    public ApiResponse<AdminUpdateUserStatusResponseDTO> updateUserStatus(
+            @PathVariable java.util.UUID userId,
+            @jakarta.validation.Valid @RequestBody AdminUpdateUserStatusRequestDTO request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal id.ac.ui.cs.advprog.jsonauthservice.security.CustomUserDetails adminDetails
+    ) {
+        AdminUpdateUserStatusResponseDTO result = adminUserService.updateUserStatus(userId, request, adminDetails.getId());
+
+        ApiResponse<AdminUpdateUserStatusResponseDTO> response = new ApiResponse<>();
+        response.setSuccess(true);
+        response.setMessage("User status and role updated successfully");
         response.setData(result);
         return response;
     }

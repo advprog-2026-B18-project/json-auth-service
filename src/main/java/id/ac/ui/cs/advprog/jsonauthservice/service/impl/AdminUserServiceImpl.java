@@ -1,9 +1,6 @@
 package id.ac.ui.cs.advprog.jsonauthservice.service.impl;
 
-import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUserDetailResponseDTO;
-import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUserListItemDTO;
-import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.AdminUserListResponseDTO;
-import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.PaginationDTO;
+import id.ac.ui.cs.advprog.jsonauthservice.dto.admin.*;
 import id.ac.ui.cs.advprog.jsonauthservice.dto.jastiper.JastiperStats;
 import id.ac.ui.cs.advprog.jsonauthservice.model.Account;
 import id.ac.ui.cs.advprog.jsonauthservice.model.AccountStatus;
@@ -155,6 +152,40 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         return dto;
+    }
+
+    @Override
+    public AdminUpdateUserStatusResponseDTO updateUserStatus(java.util.UUID userId, AdminUpdateUserStatusRequestDTO request, java.util.UUID adminId) {
+        Account account = accountRepository.findById(userId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found"));
+
+        if (account.getRole() == Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot modify admin accounts");
+        }
+
+        switch (request.getAction()) {
+            case BAN:
+                account.setStatus(AccountStatus.BANNED);
+                break;
+            case UNBAN:
+                account.setStatus(AccountStatus.ACTIVE);
+                break;
+            case DEMOTE_TO_TITIPERS:
+                account.setRole(Role.TITIPERS);
+                break;
+        }
+
+        account = accountRepository.save(account);
+
+        AdminUpdateUserStatusResponseDTO response = new AdminUpdateUserStatusResponseDTO();
+        response.setUserId(account.getId());
+        response.setUsername(account.getUsername());
+        response.setRole(account.getRole());
+        response.setStatus(account.getStatus());
+        response.setUpdatedAt(account.getUpdatedAt());
+        response.setActionBy(adminId);
+
+        return response;
     }
 }
 
