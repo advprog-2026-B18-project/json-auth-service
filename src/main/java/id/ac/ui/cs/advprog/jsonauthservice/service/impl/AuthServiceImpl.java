@@ -57,16 +57,13 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
 
-        if (request.getRole() == Role.ADMIN) {
-            throw new IllegalArgumentException("Cannot request admin role");
-        }
-
         Account account = new Account();
         account.setEmail(request.getEmail());
         account.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        account.setRole(request.getRole());
+
+        account.setRole(Role.TITIPERS);
+        account.setStatus(AccountStatus.ACTIVE);
         account.setUsername(null);
-        account.setStatus((request.getRole() == Role.JASTIPER) ? AccountStatus.PENDING_VERIFICATION : AccountStatus.ACTIVE);
 
         Account saved = accountRepository.save(account);
 
