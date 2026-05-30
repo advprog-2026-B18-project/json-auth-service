@@ -25,7 +25,7 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
         if (path.startsWith("/internal/")) {
             String serviceKey = request.getHeader("X-Service-Key");
             if (serviceKey == null || !serviceKey.equals(internalServiceKey)) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"message\": \"Invalid Service Key\"}");
                 return;
             }

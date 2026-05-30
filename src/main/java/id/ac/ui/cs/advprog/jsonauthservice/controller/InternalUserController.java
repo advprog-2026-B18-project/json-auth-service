@@ -1,11 +1,14 @@
 package id.ac.ui.cs.advprog.jsonauthservice.controller;
 
+import id.ac.ui.cs.advprog.jsonauthservice.dto.internal.InternalOrderEventRequestDTO;
 import id.ac.ui.cs.advprog.jsonauthservice.dto.internal.InternalRatingRequestDTO;
+import id.ac.ui.cs.advprog.jsonauthservice.dto.internal.InternalRatingResponseDTO;
 import id.ac.ui.cs.advprog.jsonauthservice.model.Account;
 import id.ac.ui.cs.advprog.jsonauthservice.model.AccountStatus;
-import id.ac.ui.cs.advprog.jsonauthservice.model.Role;
 import id.ac.ui.cs.advprog.jsonauthservice.repository.AccountRepository;
+import id.ac.ui.cs.advprog.jsonauthservice.service.AccountService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +21,11 @@ import java.util.UUID;
 public class InternalUserController {
 
     private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
-    public InternalUserController(AccountRepository accountRepository) {
+    public InternalUserController(AccountRepository accountRepository, AccountService accountService) {
         this.accountRepository = accountRepository;
+        this.accountService = accountService;
     }
 
     @GetMapping("/{userId}/validate")
@@ -39,33 +44,19 @@ public class InternalUserController {
     }
 
     @PostMapping("/{userId}/rating")
-    public ResponseEntity<?> updateRating(@PathVariable UUID userId, @RequestBody InternalRatingRequestDTO request) {
-        Account account = accountRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Jastiper not found"));
-
-        if (account.getRole() != Role.JASTIPER) {
-            return ResponseEntity.status(404).body(Map.of("message", "Jastiper not found"));
-        }
-
-        account.setTotalOrders(account.getTotalOrders() + 1);
-
-        if (Boolean.TRUE.equals(request.getIsCompleted())) {
-            account.setCompletedOrders(account.getCompletedOrders() + 1);
-        }
-
-        double currentTotalScore = account.getAvgRating() * (account.getTotalOrders() - 1);
-        double newAvgRating = (currentTotalScore + request.getRating()) / account.getTotalOrders();
-
-        account.setAvgRating(Math.round(newAvgRating * 10.0) / 10.0);
-
-        accountRepository.save(account);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("user_id", account.getId());
-        response.put("avg_rating", account.getAvgRating());
-        response.put("total_orders", account.getTotalOrders());
-        response.put("completed_orders", account.getCompletedOrders());
-
+    public ResponseEntity<InternalRatingResponseDTO> updateRating(
+            @PathVariable UUID userId,
+            @Valid @RequestBody InternalRatingRequestDTO request) {
+        InternalRatingResponseDTO response = accountService.updateRating(
+                userId, request.getRating(), request.getIsCompleted());
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{userId}/order-event")
+    public ResponseEntity<Void> handleOrderEvent(
+            @PathVariable UUID userId,
+            @Valid @RequestBody InternalOrderEventRequestDTO request) {
+        accountService.handleOrderEvent(userId, request.getEvent());
+        return ResponseEntity.ok().build();
     }
 }
