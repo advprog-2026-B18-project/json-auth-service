@@ -15,6 +15,7 @@ import id.ac.ui.cs.advprog.jsonauthservice.model.SocialMediaLink;
 import id.ac.ui.cs.advprog.jsonauthservice.repository.AccountRepository;
 import id.ac.ui.cs.advprog.jsonauthservice.repository.KYCSubmissionRepository;
 import id.ac.ui.cs.advprog.jsonauthservice.service.ProfileService;
+import id.ac.ui.cs.advprog.jsonauthservice.service.UsernameGeneratorStrategy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -25,11 +26,14 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final AccountRepository accountRepository;
     private final KYCSubmissionRepository kycSubmissionRepository;
+    private final UsernameGeneratorStrategy usernameGeneratorStrategy;
 
     public ProfileServiceImpl(AccountRepository accountRepository,
-                              KYCSubmissionRepository kycSubmissionRepository) {
+                              KYCSubmissionRepository kycSubmissionRepository,
+                              UsernameGeneratorStrategy usernameGeneratorStrategy) {
         this.accountRepository = accountRepository;
         this.kycSubmissionRepository = kycSubmissionRepository;
+        this.usernameGeneratorStrategy = usernameGeneratorStrategy;
     }
 
     @Override
@@ -59,24 +63,9 @@ public class ProfileServiceImpl implements ProfileService {
         String requestedUsername = request.getUsername();
 
         if (requestedUsername == null || requestedUsername.isBlank()) {
-            // Auto-generate from email local part if username is missing
-            String localPart = account.getEmail().split("@")[0];
-            String base = localPart.replaceAll("[^A-Za-z0-9_]", "_");
-            if (base.length() > 30) {
-                base = base.substring(0, 30);
+            if (account.getUsername() == null) {
+                account.setUsername(usernameGeneratorStrategy.generateUsername(account.getEmail()));
             }
-            String candidate = base.isEmpty() ? "user" : base;
-            int suffix = 0;
-            while (accountRepository.existsByUsername(candidate)) {
-                suffix++;
-                String withSuffix = base;
-                String suffixStr = String.valueOf(suffix);
-                if (withSuffix.length() + suffixStr.length() > 30) {
-                    withSuffix = withSuffix.substring(0, 30 - suffixStr.length());
-                }
-                candidate = withSuffix + suffixStr;
-            }
-            account.setUsername(candidate);
         } else {
             // Explicit username: ensure uniqueness if changed
             if (!requestedUsername.equals(account.getUsername())
@@ -108,6 +97,22 @@ public class ProfileServiceImpl implements ProfileService {
             throw new AccessDeniedException("Profile not available");
         }
 
+        return buildPublicProfile(account);
+    }
+
+    @Override
+    public PublicProfileResponseDTO getPublicProfileById(UUID id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Profile not found"));
+
+        if (account.getStatus() == AccountStatus.BANNED) {
+            throw new AccessDeniedException("Profile not available");
+        }
+
+        return buildPublicProfile(account);
+    }
+
+    private PublicProfileResponseDTO buildPublicProfile(Account account) {
         PublicProfileResponseDTO dto = new PublicProfileResponseDTO();
         dto.setUserId(account.getId());
         dto.setUsername(account.getUsername());
@@ -119,11 +124,22 @@ public class ProfileServiceImpl implements ProfileService {
 
         if (account.getRole() == Role.JASTIPER) {
             PublicJastiperStatsDTO stats = new PublicJastiperStatsDTO();
-            stats.setTotalOrders(0);
-            stats.setSuccessRate(0.0);
-            stats.setAvgRating(0.0);
+
+            int total = account.getTotalOrders() != null ? account.getTotalOrders() : 0;
+            int completed = account.getCompletedOrders() != null ? account.getCompletedOrders() : 0;
+            double avgRating = account.getAvgRating() != null ? account.getAvgRating() : 0.0;
+
+            stats.setTotalOrders(total);
+            stats.setAvgRating(avgRating);
+
+            double successRate = 0.0;
+            if (total > 0) {
+                successRate = ((double) completed / total) * 100;
+            }
+            stats.setSuccessRate(Math.round(successRate * 10.0) / 10.0);
+
             dto.setStats(stats);
-            dto.setRating(0.0);
+            dto.setRating(avgRating);
             dto.setBadges(java.util.List.of());
         }
 
@@ -141,6 +157,10 @@ public class ProfileServiceImpl implements ProfileService {
         if (account.getUsername() == null || account.getUsername().isBlank()
                 || account.getFullName() == null || account.getFullName().isBlank()) {
             throw new IllegalArgumentException("User must have username and full_name before submitting KYC");
+        }
+
+        if (request.getSocialMediaLinks() == null || request.getSocialMediaLinks().isEmpty()) {
+            throw new IllegalArgumentException("At least one social media link is required for KYC");
         }
 
         if (kycSubmissionRepository.existsByUserAndStatus(account, KycStatus.PENDING_VERIFICATION)) {
@@ -188,36 +208,4 @@ public class ProfileServiceImpl implements ProfileService {
         dto.setRejectionReason(submission.getRejectionReason());
         return dto;
     }
-
-    @Override
-    public PublicProfileResponseDTO getPublicProfileById(UUID id) {
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Profile not found"));
-
-        if (account.getStatus() == AccountStatus.BANNED) {
-            throw new AccessDeniedException("Profile not available");
-        }
-
-        PublicProfileResponseDTO dto = new PublicProfileResponseDTO();
-        dto.setUserId(account.getId());
-        dto.setUsername(account.getUsername());
-        dto.setFullName(account.getFullName());
-        dto.setProfilePictureUrl(account.getProfilePictureUrl());
-        dto.setRole(account.getRole());
-        dto.setMemberSince(account.getCreatedAt());
-        dto.setStatus(account.getStatus());
-
-        if (account.getRole() == Role.JASTIPER) {
-            PublicJastiperStatsDTO stats = new PublicJastiperStatsDTO();
-            stats.setTotalOrders(0);
-            stats.setSuccessRate(0.0);
-            stats.setAvgRating(0.0);
-            dto.setStats(stats);
-            dto.setRating(0.0);
-            dto.setBadges(java.util.List.of());
-        }
-
-        return dto;
-    }
 }
-
