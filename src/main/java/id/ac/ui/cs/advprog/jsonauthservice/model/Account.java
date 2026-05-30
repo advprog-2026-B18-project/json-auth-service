@@ -48,6 +48,15 @@ public class Account {
     @Column(name = "updated_at", nullable = false)
     private java.time.OffsetDateTime updatedAt;
 
+    @Column(name = "total_orders")
+    private Integer totalOrders = 0;
+
+    @Column(name = "completed_orders")
+    private Integer completedOrders = 0;
+
+    @Column(name = "avg_rating")
+    private Double avgRating = 0.0;
+
     public Account() {
     }
 
