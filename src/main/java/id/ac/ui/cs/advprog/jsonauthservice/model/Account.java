@@ -57,6 +57,9 @@ public class Account {
     @Column(name = "avg_rating")
     private Double avgRating = 0.0;
 
+    @Column(name = "rating_count")
+    private Integer ratingCount = 0;
+
     public Account() {
     }
 
